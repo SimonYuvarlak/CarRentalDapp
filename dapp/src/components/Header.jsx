@@ -50,7 +50,7 @@ const Header = (props) => {
 
   return (
     <header className="sticky top-0 z-40  backdrop-blur p-4 flex justify-between items-center">
-      <div className="ml-4 text-white font-bold text-lg">Car Rental App</div>
+      <div className="ml-4 text-white font-bold text-lg">Car Rental Platform</div>
       {props.loggedIn ? (
         <div
           className="text-white hover:text-black hover:cursor-pointer font-bold text-lg tooltip tooltipstered"

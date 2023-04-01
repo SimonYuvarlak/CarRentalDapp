@@ -291,9 +291,9 @@ function App() {
         <>
           <div className="h-screen text-white  w-full">
             <div className=" p-4 mt-10 grid place-content-center">
-              <h1 className="text-2xl font-bold text-center">Login To Dab</h1>
+              <h1 className="text-2xl font-bold text-center">Register To Car Rental Platform</h1>
               <h3 className="text-center mt-4">
-                Enter your Address key to Login or Register
+                Enter your name and surname to register
               </h3>
               <div className="grid mb-8 mt-4 grid-flow-row">
                 <input
