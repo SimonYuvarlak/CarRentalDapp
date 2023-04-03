@@ -17,7 +17,7 @@ export const init = async () => {
         selectedAccount = accounts[0];
       })
       .catch((err) => {
-        console.log(err);
+        // console.log(err);
         return;
       });
   }
@@ -173,8 +173,12 @@ export const getUser = async () => {
   if (!isInitialized) {
     await init();
   }
-  let res = await renterContract.methods.getUser(selectedAccount).call();
-  return res;
+  try {
+    let res = await renterContract.methods.getUser(selectedAccount).call();
+    return res;
+  } catch(e) {
+    console.log("User has not registered!")
+  }
 };
 
 export const getUserDebt = async () => {

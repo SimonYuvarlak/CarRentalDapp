@@ -12,28 +12,11 @@ import GradientButton from "./components/reusables/GradientButton";
 import AdminActions from "./components/AdminActions";
 import DueComponent from "./components/DueComponent";
 import {
-  init,
   getUserAddress,
-  activateCar,
-  addCar,
-  checkIn,
-  checkOut,
-  deActivateCar,
-  deposit,
-  makePayment,
   register,
-  setCarManagerAddress,
-  setCarManagerOwner,
-  setOwner,
-  setUserManagerOwner,
   getAllCars,
   getCar,
-  getCarManager,
   getOwner,
-  getUserBalance,
-  getUserDebt,
-  getUserManager,
-  isCarActive,
   login,
 } from "./Web3Client";
 // Assets
@@ -48,16 +31,6 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
-  const [user, setUser] = useState({
-    walletaddress: "",
-    name: "",
-    lastname: "",
-    rentedCarId: 0,
-    balance: 0,
-    debt: 0,
-    start: 0,
-    end: 0,
-  });
   const [cars, setCars] = useState([]);
   const [name, setName] = useState({});
   const [lastName, setLastName] = useState({});
@@ -73,7 +46,7 @@ function App() {
     const handleInit = async () => {
       let isAUser = await login();
       // If the user exists
-      if (isAUser.address != emptyAddress) {
+      if (isAUser.address !== emptyAddress) {
         setLoggedIn(true); //login user
         // set user credits
         setUserCredit(
@@ -83,8 +56,6 @@ function App() {
         setDue(Web3.utils.fromWei(String(isAUser.debt), "ether").toString());
         // set user name
         setUserName(isAUser.name);
-        // set the user
-        setUser(isAUser);
         // get the user address
         let address = await getUserAddress();
         // get the owner
@@ -97,17 +68,17 @@ function App() {
         let carArray = await getAllCars();
         await getCars(carArray);
         // update user status
-        if (isAUser.rentedCarId != 0) {
+        if (isAUser.rentedCarId !== 0) {
           let rentedCar = await getCar(isAUser.rentedCarId);
           setIsAvailable(`Rented ${rentedCar.name} - ${rentedCar.id}`);
         } else {
-          if (isAUser.debt != 0) {
+          if (isAUser.debt !== 0) {
             setIsAvailable("Pay your due before renting again!");
           }
         }
         // adjust ride time
-        if (isAUser.rentedCarId != 0) {
-          if (isAUser.end != 0) {
+        if (isAUser.rentedCarId !== 0) {
+          if (isAUser.end !== 0) {
             setRideMins(
               Math.floor((isAUser.end - isAUser.start) / 60).toString()
             );
@@ -147,7 +118,7 @@ function App() {
 
   const updateData = async () => {
     let user = await login();
-    if (user.address != emptyAddress) {
+    if (user.address !== emptyAddress) {
       // set user credits
       setUserCredit(
         Web3.utils.fromWei(String(user.balance), "ether").toString()
@@ -170,11 +141,11 @@ function App() {
         setRideMins("0");
       }
       // update user status
-      if (user.rentedCarId && user.rentedCarId != 0) {
+      if (user.rentedCarId && user.rentedCarId !== 0) {
         let rentedCar = await getCar(user.rentedCarId);
         setIsAvailable(`Rented ${rentedCar.name} - ${rentedCar.id}`);
       } else {
-        if (user.debt != 0) {
+        if (user.debt !== 0) {
           setIsAvailable("Pay your due before renting again!");
         } else {
           setIsAvailable("Can Rent");

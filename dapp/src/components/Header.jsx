@@ -17,7 +17,6 @@ const Header = (props) => {
     navigator.clipboard
       .writeText(userAddress)
       .then(() => {
-        console.log("Text copied to clipboard");
         setCopied(true);
         setTimeout(() => {
           setCopied(false);
