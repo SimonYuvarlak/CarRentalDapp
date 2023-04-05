@@ -44,6 +44,10 @@ export const getUserAddress = async () => {
 
 // Execute Functions
 
+// function addUser(address payable walletAddress, string memory name, string memory lastname) public {
+//   require(!isUser(walletAddress), "User already exists!");
+//   users[walletAddress] = User(walletAddress, name, lastname, 0, 0, 0, 0, 0);
+// }
 export const register = async (name, surname) => {
   if (!isInitialized) {
     await init();
@@ -54,6 +58,10 @@ export const register = async (name, surname) => {
   return res;
 };
 
+// function activateCar(uint id) public onlyOwner {
+//   require(cars[id].id != 0, "Car does not exist!");
+//   cars[id].availableForRent = true;
+// }
 export const activateCar = async (id) => {
   if (!isInitialized) {
     await init();
@@ -64,6 +72,11 @@ export const activateCar = async (id) => {
   return res;
 };
 
+// function addCar(uint id, string memory name, string memory url, uint rent, uint sale) public onlyOwner {
+//   require(cars[id].id == 0, "Car with this id already exists!");
+//   cars[id] = Car(id, name, url, true, rent, sale);
+//   carIds.push(id);
+// }
 export const addCar = async (id, name, url, rentFee, saleFee) => {
   if (!isInitialized) {
     await init();
@@ -74,6 +87,19 @@ export const addCar = async (id, name, url, rentFee, saleFee) => {
   return res;
 };
 
+// function checkIn(address payable walletAddress) public {
+//   require(isUser(walletAddress), "User does not exist!");
+//   uint rentedCarId = users[walletAddress].rentedCarId;
+//   require(rentedCarId != 0, "User has not rented a car!");
+
+//   users[walletAddress].end = block.timestamp;
+//   users[walletAddress].debt += calculateDebt(walletAddress);
+
+//   users[walletAddress].rentedCarId = 0;
+//   users[walletAddress].start = 0;
+//   users[walletAddress].end = 0;
+//   cars[rentedCarId].availableForRent = true;
+// }
 export const checkIn = async () => {
   if (!isInitialized) {
     await init();
@@ -84,6 +110,16 @@ export const checkIn = async () => {
   return res;
 };
 
+// function checkOut(address payable walletAddress, uint id) public {
+//   require(isUser(walletAddress), "User does not exist!");
+//   require(isCarActive(id), "Car is not available for rent!");
+//   require(users[walletAddress].rentedCarId == 0, "User has already rented a car!");
+//   require(users[walletAddress].debt == 0, "User has an outstanding debt!");
+
+//   users[walletAddress].start = block.timestamp;
+//   users[walletAddress].rentedCarId = id;
+//   cars[id].availableForRent =  false;
+// }
 export const checkOut = async (id) => {
   if (!isInitialized) {
     await init();
@@ -94,6 +130,10 @@ export const checkOut = async (id) => {
   return res;
 };
 
+// function deactivateCar(uint id) public onlyOwner {
+//   require(cars[id].id != 0, "Car does not exist!");
+//   cars[id].availableForRent = false;
+// }
 export const deActivateCar = async (id) => {
   if (!isInitialized) {
     await init();
@@ -104,6 +144,10 @@ export const deActivateCar = async (id) => {
   return res;
 };
 
+// function deposit(address payable walletAddress) public payable {
+//   require(isUser(walletAddress), "User does not exist!");
+//   users[walletAddress].balance += msg.value;
+// }
 export const deposit = async (value) => {
   if (!isInitialized) {
     await init();
@@ -115,6 +159,16 @@ export const deposit = async (value) => {
   return res;
 };
 
+// function makePayment(address payable walletAddress) public {
+//   require(isUser(walletAddress), "User does not exist!");
+//   uint debt = users[walletAddress].debt;
+//   uint balance = users[walletAddress].balance;
+//   require(debt > 0, "User has no debt!");
+//   require(balance >= debt, "User has insufficient balance!");
+
+//   users[walletAddress].balance -= debt;
+//   users[walletAddress].debt = 0;
+// }
 export const makePayment = async () => {
   if (!isInitialized) {
     await init();
@@ -125,6 +179,9 @@ export const makePayment = async () => {
   return res;
 };
 
+// function setOwner(address payable _newOwner) external onlyOwner {
+//   owner = _newOwner;
+// }
 export const setOwner = async (newOwner) => {
   if (!isInitialized) {
     await init();
@@ -137,6 +194,9 @@ export const setOwner = async (newOwner) => {
 
 // Query functions
 
+// function getCarIds() public view returns (uint[] memory) {
+//   return carIds;
+// }
 export const getAllCars = async () => {
   if (!isInitialized) {
     await init();
@@ -145,6 +205,10 @@ export const getAllCars = async () => {
   return res;
 };
 
+// function getCar(uint id) public view returns(Car memory) {
+//   require(cars[id].id != 0, "Car does not exist!");
+//   return cars[id];
+// }
 export const getCar = async (id) => {
   if (!isInitialized) {
     await init();
@@ -153,14 +217,10 @@ export const getCar = async (id) => {
   return res;
 };
 
-export const getCarManager = async () => {
-  if (!isInitialized) {
-    await init();
-  }
-  let res = await renterContract.methods.getCarManager().call();
-  return res;
-};
-
+// function getUserBalance(address payable walletAddress) public view returns(uint) {
+//   require(isUser(walletAddress), "User does not exist!");
+//   return users[walletAddress].balance;
+// }
 export const getUserBalance = async () => {
   if (!isInitialized) {
     await init();
@@ -169,18 +229,10 @@ export const getUserBalance = async () => {
   return res;
 };
 
-export const getUser = async () => {
-  if (!isInitialized) {
-    await init();
-  }
-  try {
-    let res = await renterContract.methods.getUser(selectedAccount).call();
-    return res;
-  } catch(e) {
-    console.log("User has not registered!")
-  }
-};
-
+// function getUserDebt(address payable walletAddress) public view returns(uint) {
+//   require(isUser(walletAddress), "User does not exist!");
+//   return users[walletAddress].debt;
+// }
 export const getUserDebt = async () => {
   if (!isInitialized) {
     await init();
@@ -189,6 +241,10 @@ export const getUserDebt = async () => {
   return res;
 };
 
+// function isCarActive(uint id) public view returns(bool) {
+//   require(cars[id].id != 0, "Car does not exist!");
+//   return cars[id].availableForRent;
+// }
 export const isCarActive = async (id) => {
   if (!isInitialized) {
     await init();
@@ -197,6 +253,9 @@ export const isCarActive = async (id) => {
   return res;
 };
 
+// function getOwner() external view returns(address) {
+//   return owner;
+// }
 export const getOwner = async () => {
   if (!isInitialized) {
     await init();
@@ -205,6 +264,10 @@ export const getOwner = async () => {
   return res.toString();
 };
 
+// function getUser(address payable walletAddress) public view returns (User memory) {
+//   require(isUser(walletAddress), "User does not exist!");
+//   return users[walletAddress];
+// }
 export const login = async () => {
   if (!isInitialized) {
     await init();

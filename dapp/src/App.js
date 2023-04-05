@@ -77,19 +77,15 @@ function App() {
           }
         }
         // adjust ride time
+        let rideMins = "0";
         if (isAUser.rentedCarId !== 0) {
-          if (isAUser.end !== 0) {
-            setRideMins(
-              Math.floor((isAUser.end - isAUser.start) / 60).toString()
-            );
+          if (isAUser.end !== "0") {
+            rideMins = Math.floor((isAUser.end - isAUser.start) / 60).toString();
           } else {
-            setRideMins(
-              Math.floor(
-                (Math.floor(Date.now() / 1000) - isAUser.start) / 60
-              ).toString()
-            );
+            rideMins = Math.floor((Math.floor(Date.now() / 1000) - isAUser.start) / 60).toString();
           }
         }
+        setRideMins(rideMins);
       }
     };
 
@@ -126,20 +122,15 @@ function App() {
       // set user due
       setDue(Web3.utils.fromWei(String(user.debt), "ether").toString());
       // set ride mins
-      if (user.rentedCarId !== 0) {
-        if (user.end !== 0) {
-          setRideMins(Math.floor((user.end - user.start) / 60).toString());
-        } else {
-          setRideMins(
-            Math.floor(
-              (Math.floor(Date.now() / 1000) - user.start) / 60
-            ).toString()
-          );
+      let rideMins = "0";
+        if (user.rentedCarId !== 0) {
+          if (user.end !== "0") {
+            rideMins = Math.floor((user.end - user.start) / 60).toString();
+          } else {
+            rideMins = Math.floor((Math.floor(Date.now() / 1000) - user.start) / 60).toString();
+          }
         }
-      }
-      if (rideMins === "..." || rideMins[0] === "-") {
-        setRideMins("0");
-      }
+        setRideMins(rideMins);
       // update user status
       if (user.rentedCarId && user.rentedCarId !== 0) {
         let rentedCar = await getCar(user.rentedCarId);
