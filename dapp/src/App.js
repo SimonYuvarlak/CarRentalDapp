@@ -124,7 +124,7 @@ function App() {
       // set ride mins
       let rideMins = "0";
         if (user.rentedCarId !== 0) {
-          if (user.end !== "0") {
+          if (user.end !== 0) {
             rideMins = Math.floor((user.end - user.start) / 60).toString();
           } else {
             rideMins = Math.floor((Math.floor(Date.now() / 1000) - user.start) / 60).toString();
@@ -228,7 +228,7 @@ function App() {
           {/* Car Section */}
           <div className="grid md:grid-flow-col gap-4 gap-y-12 justify-evenly mt-24 pb-24">
             {cars.length > 0 ? (
-              cars.map((car) => (
+              cars.slice(0, 3).map((car) => (
                 <div key={car.id}>
                   <CarComponent
                     isActive={car.availableForRent}

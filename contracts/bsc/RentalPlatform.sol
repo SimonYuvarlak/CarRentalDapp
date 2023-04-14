@@ -1,170 +1,219 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.7;
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract RentalPlatform {
-    event UserAdded(address indexed user, string name, string lastname);
-    event CarAdded(uint indexed id, string name, string imgUrl, uint rentFee, uint saleFee);
-    event CarActivated(uint indexed id);
-    event CarDeactivated(uint indexed id);
-    event CheckedOut(address indexed user, uint indexed carId, uint timestamp);
-    event CheckedIn(address indexed user, uint indexed carId, uint startTimestamp, uint endTimestamp);
-    event PaymentMade(address indexed user, uint amount);
+  using Counters for Counters.Counter;
+
+  Counters.Counter private _counter;
+
+  // DATA
+  //owner
+  address private owner;
+
+  // user struct
+  struct User {
+    address walletAddress;
+    string name;
+    string lastname;
+    uint rentedCarId;
+    uint balance;
+    uint debt;
+    uint start;
+    uint end;
+  }
+
+  // car struct
+  struct Car {
+    uint id;
+    string name;
+    string imgUrl;
+    Status status;
+    uint rentFee;
+    uint saleFee;
+  }
+
+  // enum to indicate the status of the car
+  enum Status { Retired, InUse, Available }
+
+  // events
+  event CarAdded(uint indexed id, string name, string imgUrl, uint rentFee, uint saleFee);
+  event CarEdited(uint indexed id, string name, string imgUrl, Status status, uint rentFee, uint saleFee);
+  event UserAdded(address indexed walletAddress, string name, string lastname);
+  event Deposit(address indexed walletAddress, uint amount);
+  event CheckOut(address indexed walletAddress, uint indexed carId);
+  event CheckIn(address indexed walletAddress, uint indexed carId);
+  event PaymentMade(address indexed walletAddress, uint amount);
+  event BalanceWithdrawn(address indexed walletAddress, uint amount);
 
 
-    address private owner;
+  // users mapping
+  mapping(address => User) public users;
 
-    struct User {
-        address payable walletAddress;
-        string name;
-        string lastname;
-        uint rentedCarId;
-        uint balance;
-        uint debt;
-        uint start;
-        uint end;
+  // cars mapping
+  mapping(uint => Car) public cars;
+
+  //constructor
+  constructor() {
+    owner = msg.sender;
+    _counter.increment();
+  }
+
+  //MODIFIERS
+  //onlyOwner
+  modifier onlyOwner() {
+    require(msg.sender == owner, "Only the owner can call this function");
+    _;
+  }
+
+  //FUNCTIONS
+  //Execute Functions
+
+  //setOwner #onlyOwner
+  function setOwner(address _newOwner) external onlyOwner {
+    owner = _newOwner;
+  }
+
+  //addUser #nonExisting
+  function addUser(string calldata name, string calldata lastname) external {
+    require(!isUser(msg.sender), "User already exists!");
+    users[msg.sender] = User(msg.sender, name, lastname, 0, 0, 0, 0, 0);
+
+    emit UserAdded(msg.sender, users[msg.sender].name, users[msg.sender].lastname);
+  }
+
+  //addCar #onlyOwner #nonExistingCar
+  function addCar(string calldata name, string calldata url, uint rent, uint sale) external onlyOwner {
+    uint counter = _counter.current();
+    cars[counter] = Car(counter, name, url, Status.Available, rent, sale);
+    _counter.increment();
+
+    emit CarAdded(counter, cars[counter].name, cars[counter].imgUrl, cars[counter].rentFee, cars[counter].saleFee);
+  }
+
+  //editCar #onlyOwner #nonExistingCar
+  function editCar(uint id, string calldata name, string calldata imgUrl, Status status, uint rentFee, uint saleFee) external onlyOwner {
+    require(cars[id].id != 0, "Car with given ID does not exist.");
+    Car storage car = cars[id];
+    if(bytes(name).length != 0) {
+        car.name = name;
+    }
+    if(bytes(imgUrl).length != 0) {
+        car.imgUrl = imgUrl;
+    }
+    car.status = status;
+    if(rentFee > 0) {
+        car.rentFee = rentFee;
+    }
+    if(saleFee > 0) {
+        car.saleFee = saleFee;
     }
 
-    struct Car {
-        uint id;
-        string name;
-        string imgUrl;
-        bool availableForRent;
-        uint rentFee; // for every minute
-        uint saleFee;
+    emit CarEdited(id, car.name, car.imgUrl, car.status, car.rentFee, car.saleFee);
+  }
+
+  //checkOut #existingUser #carIsAvailable #userHasNotRentedACar #userHasNoDebt
+  function checkOut(uint id) external {
+    require(isUser(msg.sender), "User does not exist!");
+    require(cars[id].status == Status.Available, "Car is not available for rent!");
+    require(users[msg.sender].rentedCarId == 0, "User has already rented a car!");
+    require(users[msg.sender].debt == 0, "User has an outstanding debt!");
+
+    users[msg.sender].start = block.timestamp;
+    users[msg.sender].rentedCarId = id;
+    cars[id].status =  Status.InUse;
+
+    emit CheckOut(msg.sender, id);
+  }
+
+  //checkIn #existingUser #userHasRentedACar
+  function checkIn() external {
+    require(isUser(msg.sender), "User does not exist!");
+    uint rentedCarId = users[msg.sender].rentedCarId;
+    require(rentedCarId != 0, "User has not rented a car!");
+
+    uint usedSeconds = block.timestamp - users[msg.sender].start;
+    uint rentFee = cars[rentedCarId].rentFee;
+    users[msg.sender].debt += calculateDebt(usedSeconds, rentFee);
+
+    users[msg.sender].rentedCarId = 0;
+    users[msg.sender].start = 0;
+    users[msg.sender].end = 0;
+    cars[rentedCarId].status = Status.Available;
+
+    emit CheckIn(msg.sender, rentedCarId);
+  }
+
+  //deposit #existingUser
+  function deposit() external payable {
+    require(isUser(msg.sender), "User does not exist!");
+    users[msg.sender].balance += msg.value;
+
+    emit Deposit(msg.sender, msg.value);
+  }
+
+  //makePayment #existingUser #existingDebt #sufficientBalance
+  function makePayment() external {
+    require(isUser(msg.sender), "User does not exist!");
+    uint debt = users[msg.sender].debt;
+    uint balance = users[msg.sender].balance;
+
+    require(debt > 0, "User has no debt!");
+    require(balance >= debt, "User has insufficient balance!");
+
+    unchecked {
+      users[msg.sender].balance -= debt;
     }
+    users[msg.sender].debt = 0;
 
-    mapping(address => User) public users;
-    mapping(uint => Car) public cars;
-    uint[] public carIds;
+    emit PaymentMade(msg.sender, debt);
+  }
 
-    constructor() {
-        owner = msg.sender;
-    }
+  //withdrawBalance
+  function withdrawBalance() external {
+    require(isUser(msg.sender), "User does not exist!");
+    uint balance = users[msg.sender].balance;
+    require(balance > 0, "User has no balance to withdraw!");
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner required");
-        _;
-    }
+    (bool success, ) = msg.sender.call{value: balance}("");
+    require(success, "Transfer failed.");
 
-    function setOwner(address payable _newOwner) external onlyOwner{
-        owner = _newOwner;
-    }
+    users[msg.sender].balance = 0;
+    emit BalanceWithdrawn(msg.sender, balance);
+  }
 
-    function getOwner() external view returns(address) {
-        return owner;
-    }
+  //Query Functions
 
-    function isUser(address payable walletAddress) public view returns (bool) {
-        return users[walletAddress].walletAddress != address(0);
-    }
+  //getOwner
+  function getOwner() external view returns(address) {
+    return owner;
+  }
 
-    function addUser(address payable walletAddress, string memory name, string memory lastname) public {
-        require(!isUser(walletAddress), "User already exists!");
-        users[walletAddress] = User(walletAddress, name, lastname, 0, 0, 0, 0, 0);
-        emit UserAdded(walletAddress, name, lastname);
-    }
+  //isUser
+  function isUser(address walletAddress) internal view returns(bool) {
+    return users[walletAddress].walletAddress != address(0);
+  }
 
-    function getUser(address payable walletAddress) public view returns (User memory) {
-        require(isUser(walletAddress), "User does not exist!");
-        return users[walletAddress];
-    }
+  //getUser #existingUser
+  function getUser(address walletAddress) external view returns (User memory) {
+    require(isUser(walletAddress), "User does not exist!");
+    return users[walletAddress];
+  }
 
-    function addCar(uint id, string memory name, string memory url, uint rent, uint sale) public onlyOwner {
-        require(cars[id].id == 0, "Car with this id already exists!");
-        cars[id] = Car(id, name, url, true, rent, sale);
-        carIds.push(id);
-        emit CarAdded(id, name, url, rent, sale);
-    }
+  //getCar #existingCar
+  function getCar(uint id) external view returns(Car memory) {
+    require(cars[id].id != 0, "Car does not exist!");
+    return cars[id];
+  }
 
-    function activateCar(uint id) public onlyOwner {
-        require(cars[id].id != 0, "Car does not exist!");
-        cars[id].availableForRent = true;
-        emit CarActivated(id);
-    }
+  //calculateDebt
+  function calculateDebt(uint usedSeconds, uint rentFee) private pure returns (uint) {
+    uint usedMinutes = usedSeconds / 60;
+    return usedMinutes * rentFee;
+  }
 
-    function deactivateCar(uint id) public onlyOwner {
-        require(cars[id].id != 0, "Car does not exist!");
-        cars[id].availableForRent = false;
-        emit CarDeactivated(id);
-    }
-
-    function isCarActive(uint id) public view returns (bool) {
-        require(cars[id].id != 0, "Car does not exist!");
-        return cars[id].availableForRent;
-    }
-
-    function deposit(address payable walletAddress) public payable {
-        require(isUser(walletAddress), "User does not exist!");
-        users[walletAddress].balance += msg.value;
-    }
-
-
-    function checkOut(address payable walletAddress, uint id) public {
-        require(isUser(walletAddress), "User does not exist!");
-        require(isCarActive(id), "Car is not available for rent!");
-        require(users[walletAddress].rentedCarId == 0, "User has already rented a car!");
-        require(users[walletAddress].debt == 0, "User has an outstanding debt!");
-
-        users[walletAddress].rentedCarId = id;
-        users[walletAddress].start = block.timestamp;
-        cars[id].availableForRent = false;
-        emit CheckedOut(walletAddress, id, block.timestamp);
-    }
-
-    function checkIn(address payable walletAddress) public {
-        require(isUser(walletAddress), "User does not exist!");
-        uint rentedCarId = users[walletAddress].rentedCarId;
-        require(rentedCarId != 0, "User has not rented a car!");
-
-        users[walletAddress].end = block.timestamp;
-        users[walletAddress].debt += calculateDebt(walletAddress);
-
-        users[walletAddress].rentedCarId = 0;
-        uint start = users[walletAddress].start;
-        users[walletAddress].start = 0;
-        users[walletAddress].end = 0;
-        cars[rentedCarId].availableForRent = true;
-        emit CheckedIn(walletAddress, rentedCarId, start, block.timestamp);
-    }
-
-    function calculateDebt(address payable walletAddress) internal view returns (uint) {
-        uint rentedCarId = users[walletAddress].rentedCarId;
-        uint rentFee = cars[rentedCarId].rentFee;
-        uint usedMinutes = (users[walletAddress].end - users[walletAddress].start) / 60;
-
-        return usedMinutes * rentFee;
-    }
-
-    function makePayment(address payable walletAddress) public {
-        require(isUser(walletAddress), "User does not exist!");
-        uint debt = users[walletAddress].debt;
-        uint balance = users[walletAddress].balance;
-
-        require(debt > 0, "User has no debt!");
-        require(balance >= debt, "User has insufficient balance!");
-
-        users[walletAddress].balance -= debt;
-        users[walletAddress].debt = 0;
-        emit PaymentMade(walletAddress, debt);
-    }
-
-    function getCarIds() public view returns (uint[] memory) {
-        return carIds;
-    }
-
-    function getCar(uint id) public view returns (Car memory) {
-        require(cars[id].id != 0, "Car does not exist!");
-        return cars[id];
-    }
-
-    function getUserDebt(address payable walletAddress) public view returns (uint) {
-        require(isUser(walletAddress), "User does not exist!");
-        return users[walletAddress].debt;
-    }
-
-    function getUserBalance(address payable walletAddress) public view returns (uint) {
-        require(isUser(walletAddress), "User does not exist!");
-        return users[walletAddress].balance;
-    }
+  //getCurrentCount
+  function getCurrentCount() external view returns (uint) {
+    return _counter.current();
+  }
 }
