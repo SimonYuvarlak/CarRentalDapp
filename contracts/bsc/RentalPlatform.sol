@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract RentalPlatform {
+contract RentalPlatform is ReentrancyGuard {
   using Counters for Counters.Counter;
 
   Counters.Counter private _counter;
@@ -10,6 +11,9 @@ contract RentalPlatform {
   // DATA
   //owner
   address private owner;
+
+  //total payment made to the contract
+  uint private totalPayments;
 
   // user struct
   struct User {
@@ -38,7 +42,8 @@ contract RentalPlatform {
 
   // events
   event CarAdded(uint indexed id, string name, string imgUrl, uint rentFee, uint saleFee);
-  event CarEdited(uint indexed id, string name, string imgUrl, Status status, uint rentFee, uint saleFee);
+  event CarMetadataEdited(uint indexed id, string name, string imgUrl, uint rentFee, uint saleFee);
+  event CarStatusEdited(uint indexed id, Status status);
   event UserAdded(address indexed walletAddress, string name, string lastname);
   event Deposit(address indexed walletAddress, uint amount);
   event CheckOut(address indexed walletAddress, uint indexed carId);
@@ -48,15 +53,15 @@ contract RentalPlatform {
 
 
   // users mapping
-  mapping(address => User) public users;
+  mapping(address => User) private users;
 
   // cars mapping
-  mapping(uint => Car) public cars;
+  mapping(uint => Car) private cars;
 
   //constructor
   constructor() {
     owner = msg.sender;
-    _counter.increment();
+    totalPayments = 0;
   }
 
   //MODIFIERS
@@ -84,15 +89,15 @@ contract RentalPlatform {
 
   //addCar #onlyOwner #nonExistingCar
   function addCar(string calldata name, string calldata url, uint rent, uint sale) external onlyOwner {
+    _counter.increment();
     uint counter = _counter.current();
     cars[counter] = Car(counter, name, url, Status.Available, rent, sale);
-    _counter.increment();
 
     emit CarAdded(counter, cars[counter].name, cars[counter].imgUrl, cars[counter].rentFee, cars[counter].saleFee);
   }
 
-  //editCar #onlyOwner #nonExistingCar
-  function editCar(uint id, string calldata name, string calldata imgUrl, Status status, uint rentFee, uint saleFee) external onlyOwner {
+  //editCarMetadata #onlyOwner #nonExistingCar
+  function editCarMetadata(uint id, string calldata name, string calldata imgUrl, uint rentFee, uint saleFee) external onlyOwner {
     require(cars[id].id != 0, "Car with given ID does not exist.");
     Car storage car = cars[id];
     if(bytes(name).length != 0) {
@@ -101,7 +106,7 @@ contract RentalPlatform {
     if(bytes(imgUrl).length != 0) {
         car.imgUrl = imgUrl;
     }
-    car.status = status;
+
     if(rentFee > 0) {
         car.rentFee = rentFee;
     }
@@ -109,7 +114,15 @@ contract RentalPlatform {
         car.saleFee = saleFee;
     }
 
-    emit CarEdited(id, car.name, car.imgUrl, car.status, car.rentFee, car.saleFee);
+    emit CarMetadataEdited(id, car.name, car.imgUrl, car.rentFee, car.saleFee);
+  }
+
+  //editCarStatus #onlyOwner #nonExistingCar
+  function editCarStatus(uint id, Status status) external onlyOwner {
+    require(cars[id].id != 0, "Car with given ID does not exist.");
+    cars[id].status = status;
+
+    emit CarStatusEdited(id, status);
   }
 
   //checkOut #existingUser #carIsAvailable #userHasNotRentedACar #userHasNoDebt
@@ -164,23 +177,38 @@ contract RentalPlatform {
     unchecked {
       users[msg.sender].balance -= debt;
     }
+    totalPayments += debt;
     users[msg.sender].debt = 0;
 
     emit PaymentMade(msg.sender, debt);
   }
 
   //withdrawBalance
-  function withdrawBalance() external {
+  function withdrawBalance(uint amount) external nonReentrant {
     require(isUser(msg.sender), "User does not exist!");
     uint balance = users[msg.sender].balance;
-    require(balance > 0, "User has no balance to withdraw!");
+    require(balance >= amount, "Insufficient balance to withdraw!");
 
-    (bool success, ) = msg.sender.call{value: balance}("");
+    users[msg.sender].balance -= amount;
+
+    (bool success, ) = msg.sender.call{value: amount}("");
     require(success, "Transfer failed.");
 
-    users[msg.sender].balance = 0;
-    emit BalanceWithdrawn(msg.sender, balance);
+    emit BalanceWithdrawn(msg.sender, amount);
   }
+
+  //withdrawOwnerBalance
+  function withdrawOwnerBalance(uint amount) external onlyOwner {
+    require(totalPayments >= amount, "Insufficient contract balance to withdraw!");
+
+    (bool success, ) = owner.call{value: amount}("");
+    require(success, "Transfer failed.");
+
+    totalPayments -= amount;
+
+    emit BalanceWithdrawn(owner, amount);
+  }
+
 
   //Query Functions
 
@@ -206,6 +234,29 @@ contract RentalPlatform {
     return cars[id];
   }
 
+  // Function to return cars based on their status
+  function getCarsByStatus(Status _status) external view returns (Car[] memory) {
+    uint count = 0;
+
+    // Count the number of cars with the desired status
+    for (uint i = 0; i <= _counter.current(); i++) {
+        if (cars[i].status == _status) {
+            count++;
+        }
+    }
+    Car[] memory carsWithStatus = new Car[](count);
+    count = 0;
+
+    for (uint i = 0; i <= _counter.current(); i++) {
+      if (cars[i].status == _status) {
+        carsWithStatus[count] = cars[i];
+        count++;
+      }
+    }
+
+    return carsWithStatus;
+    }
+
   //calculateDebt
   function calculateDebt(uint usedSeconds, uint rentFee) private pure returns (uint) {
     uint usedMinutes = usedSeconds / 60;
@@ -216,4 +267,16 @@ contract RentalPlatform {
   function getCurrentCount() external view returns (uint) {
     return _counter.current();
   }
+
+  //getContractBalance
+  // Function to return the balance of the contract
+  function getContractBalance() external view onlyOwner returns (uint) {
+    return address(this).balance;
+  }
+
+  //getTotalPayments
+  function getTotalPayments() external view onlyOwner returns (uint) {
+    return totalPayments;
+  }
+
 }
