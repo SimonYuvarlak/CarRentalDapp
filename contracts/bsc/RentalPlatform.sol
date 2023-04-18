@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "../../node_modules/@openzeppelin/contracts/utils/Counters.sol";
+import "../../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract RentalPlatform is ReentrancyGuard {
   using Counters for Counters.Counter;
-
   Counters.Counter private _counter;
 
   // DATA
@@ -234,28 +233,25 @@ contract RentalPlatform is ReentrancyGuard {
     return cars[id];
   }
 
-  // Function to return cars based on their status
+  //getCarsByStatus  
   function getCarsByStatus(Status _status) external view returns (Car[] memory) {
     uint count = 0;
-
-    // Count the number of cars with the desired status
-    for (uint i = 0; i <= _counter.current(); i++) {
+    uint length = _counter.current();
+    for (uint i = 1; i <= length; i++) {
         if (cars[i].status == _status) {
             count++;
         }
     }
     Car[] memory carsWithStatus = new Car[](count);
     count = 0;
-
-    for (uint i = 0; i <= _counter.current(); i++) {
+    for (uint i = 1; i <= length; i++) {
       if (cars[i].status == _status) {
         carsWithStatus[count] = cars[i];
         count++;
       }
     }
-
     return carsWithStatus;
-    }
+  }
 
   //calculateDebt
   function calculateDebt(uint usedSeconds, uint rentFee) private pure returns (uint) {

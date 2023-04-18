@@ -1,1 +1,1 @@
-export const rentalPlatformAddress = "0xEe78834f14A0e23Cf8dA471a8fb0f3946905Bb3d"
+export const rentalPlatformAddress = "0xFA3a7f34683e894BFB51C807Dd8C89FAb20FBc9c"

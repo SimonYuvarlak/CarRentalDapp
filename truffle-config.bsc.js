@@ -5,7 +5,6 @@ const HDWalletProvider = require('@truffle/hdwallet-provider');
 require('dotenv').config();
 
 const mnemonic = process.env["MNEMONIC"].toString().trim();
-// contract_address: 0x7C887432b7E165D564C08983813E3bCd5DdE3E09
 
 module.exports = {
 
@@ -50,7 +49,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.7"
+      version: "^0.8.7"
     }
   },
   db: {
