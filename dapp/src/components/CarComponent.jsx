@@ -1,19 +1,14 @@
 import React from "react";
 import { checkOut, checkIn } from "../Web3Client";
+import Web3 from "web3";
 
 const CarComponent = (props) => {
   const checkOutCar = async () => {
-    props.funcBefore(4);
     await checkOut(props.id);
-    props.funcAfter();
   };
 
   const checkInCar = async () => {
-    props.funcBefore(2);
-    props.funcBefore(3);
-    props.funcBefore(4);
     await checkIn(props.id);
-    props.funcAfter();
   };
 
   return (
@@ -28,10 +23,10 @@ const CarComponent = (props) => {
         <p>{props.name}</p>
       </div>
       <div className="text-white space-y-4 text-xl mt-4">
-        <p>Car Fee: {props.carFee / 1000000000000000000} BNB</p>
-        <p>Sale Fee: {props.carFee / 10000000000000} BNB</p>
-        <p className={props.isActive ? "text-green-500" : "text-red-300"}>
-          {props.isActive ? "Active" : "Inactive"}
+        <p>Car Fee: {Web3.utils.fromWei(props.rentFee)} BNB</p>
+        <p>Sale Fee: {Web3.utils.fromWei(props.saleFee)} BNB</p>
+        <p className={props.carStatus == 2 ? "text-green-500" : "text-red-300"}>
+          {props.carStatus == 2 ? "Active" : "Inactive"}
         </p>
       </div>
       <div className="flex flex-row justify-evenly mt-10">

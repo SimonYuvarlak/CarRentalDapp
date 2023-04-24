@@ -3,11 +3,7 @@ import { makePayment } from "../Web3Client";
 
 const DueComponent = (props) => {
   const paymentClicked = async () => {
-    props.funcBefore(1);
-    props.funcBefore(2);
-    props.funcBefore(4);
     await makePayment();
-    props.funcAfter();
   };
 
   return (

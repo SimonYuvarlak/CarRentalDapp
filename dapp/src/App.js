@@ -14,7 +14,7 @@ import DueComponent from "./components/DueComponent";
 import {
   getUserAddress,
   register,
-  getAllCars,
+  getCarsByStatus,
   getCar,
   getOwner,
   login,
@@ -65,8 +65,8 @@ function App() {
           setIsAdmin(true);
         }
         // get cars
-        let carArray = await getAllCars();
-        await getCars(carArray);
+        let carArray = await getCarsByStatus(2);
+        setCars(carArray);
         // update user status
         if (isAUser.rentedCarId !== 0) {
           let rentedCar = await getCar(isAUser.rentedCarId);
@@ -79,11 +79,7 @@ function App() {
         // adjust ride time
         let rideMins = "0";
         if (isAUser.rentedCarId !== 0) {
-          if (isAUser.end !== "0") {
-            rideMins = Math.floor((isAUser.end - isAUser.start) / 60).toString();
-          } else {
-            rideMins = Math.floor((Math.floor(Date.now() / 1000) - isAUser.start) / 60).toString();
-          }
+          rideMins = Math.floor((Math.floor(Date.now() / 1000) - isAUser.start) / 60).toString();
         }
         setRideMins(rideMins);
       }
@@ -91,78 +87,6 @@ function App() {
 
     handleInit();
   }, []);
-
-  const updateLoading = (data) => {
-    switch (data) {
-      case 1:
-        setUserCredit("...");
-        break;
-      case 2:
-        setDue("...");
-        break;
-      case 3:
-        setRideMins("...");
-        break;
-      case 4:
-        setIsAvailable("...");
-        break;
-      default:
-        console.log("invalid data number");
-        break;
-    }
-  };
-
-  const updateData = async () => {
-    let user = await login();
-    if (user.address !== emptyAddress) {
-      // set user credits
-      setUserCredit(
-        Web3.utils.fromWei(String(user.balance), "ether").toString()
-      );
-      // set user due
-      setDue(Web3.utils.fromWei(String(user.debt), "ether").toString());
-      // set ride mins
-      let rideMins = "0";
-        if (user.rentedCarId !== 0) {
-          if (user.end !== 0) {
-            rideMins = Math.floor((user.end - user.start) / 60).toString();
-          } else {
-            rideMins = Math.floor((Math.floor(Date.now() / 1000) - user.start) / 60).toString();
-          }
-        }
-        setRideMins(rideMins);
-      // update user status
-      if (user.rentedCarId && user.rentedCarId !== 0) {
-        let rentedCar = await getCar(user.rentedCarId);
-        setIsAvailable(`Rented ${rentedCar.name} - ${rentedCar.id}`);
-      } else {
-        if (user.debt !== 0) {
-          setIsAvailable("Pay your due before renting again!");
-        } else {
-          setIsAvailable("Can Rent");
-        }
-      }
-      // get cars
-      let carArray = await getAllCars();
-      await getCars(carArray);
-    }
-  };
-
-  const getCars = async (cars) => {
-    let carArr = [];
-    cars.forEach(async (element) => {
-      let car = await getCar(element);
-      carArr.push({
-        id: car.id,
-        name: car.name,
-        imgUrl: car.imgUrl,
-        availableForRent: car.availableForRent,
-        rentFee: car.rentFee,
-        saleFee: car.saleFee,
-      });
-      setCars(carArr);
-    });
-  };
 
   const handleNameChange = (event) => {
     setName(event.target.value);
@@ -183,12 +107,12 @@ function App() {
             <TopLabel userName={userName} />
           </div>
           <div className="grid place-content-center mt-8">
-            {isAdmin && (
+            {/* {isAdmin && (
               <GradientButton
                 onClick={() => setShowModal(true)}
                 title="Admin Actions"
               />
-            )}
+            )} */}
           </div>
           {/* Data Section */}
           <div className=" mx-auto grid place-content-center  mt-12">
@@ -216,29 +140,29 @@ function App() {
             <InputComponent
               holder=" Credit balance"
               label="Credit your account"
-              funcBefore={updateLoading}
-              funcAfter={updateData}
+              type="credit"
             />
             <DueComponent
               label="Pay your due"
-              funcBefore={updateLoading}
-              funcAfter={updateData}
+            />
+            <InputComponent
+              holder=" Withdraw balance"
+              label="Withdraw token from your account"
+              type="withdraw"
             />
           </div>
           {/* Car Section */}
           <div className="grid md:grid-flow-col gap-4 gap-y-12 justify-evenly mt-24 pb-24">
             {cars.length > 0 ? (
-              cars.slice(0, 3).map((car) => (
+              cars.map((car) => (
                 <div key={car.id}>
                   <CarComponent
-                    isActive={car.availableForRent}
-                    carFee={car.rentFee}
+                    carStatus={car.status}
+                    rentFee={car.rentFee}
                     saleFee={car.saleFee}
                     image={car.imgUrl}
                     id={car.id}
                     name={car.name}
-                    funcBefore={updateLoading}
-                    funcAfter={updateData}
                   />
                 </div>
               ))

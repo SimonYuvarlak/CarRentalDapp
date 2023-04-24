@@ -27,6 +27,7 @@
     "dotenv": "^9.0.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.3"
+    "@openzeppelin/contracts": "^4.8.3",
+    "@openzeppelin/test-helpers": "^0.5.16"
   }
 }
