@@ -53,7 +53,8 @@ function App() {
           Web3.utils.fromWei(String(isAUser.balance), "ether").toString()
         );
         // set user due
-        setDue(Web3.utils.fromWei(String(isAUser.debt), "ether").toString());
+        let userDue = Web3.utils.fromWei(String(isAUser.debt), "ether").toString();
+        setDue(userDue);
         // set user name
         setUserName(isAUser.name);
         // get the user address
@@ -65,20 +66,27 @@ function App() {
           setIsAdmin(true);
         }
         // get cars
-        let carArray = await getCarsByStatus(2);
+        let carArray = [];
+        let carsByStatus = await getCarsByStatus(2);
+        carArray.push(...carsByStatus);
+        if(isAUser.rentedCarId !== "0") {
+          const userCar = await getCar(Number(isAUser.rentedCarId));
+          carArray.push(userCar);
+        }
         setCars(carArray);
         // update user status
-        if (isAUser.rentedCarId !== 0) {
+        if (isAUser.rentedCarId !== "0") {
           let rentedCar = await getCar(isAUser.rentedCarId);
           setIsAvailable(`Rented ${rentedCar.name} - ${rentedCar.id}`);
         } else {
-          if (isAUser.debt !== 0) {
+          console.warn(userDue);
+          if (userDue !== "0") {
             setIsAvailable("Pay your due before renting again!");
           }
         }
         // adjust ride time
         let rideMins = "0";
-        if (isAUser.rentedCarId !== 0) {
+        if (isAUser.rentedCarId !== "0") {
           rideMins = Math.floor((Math.floor(Date.now() / 1000) - isAUser.start) / 60).toString();
         }
         setRideMins(rideMins);
