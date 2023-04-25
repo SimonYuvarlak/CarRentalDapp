@@ -5,15 +5,19 @@ const AdminActions = () => {
   return (
     <section className="grid place-items-center grid-flow-row overflow-hidden">
       <h2 className="font-bold text-2xl">Admin Actions</h2>
-      <UserInput label="Activate Car" placeholder="Car id" name="activeCarId" />
       <UserInput
-        label="Deactivate Car"
-        placeholder="Car id"
-        name="deactivateCarId"
+        label="Edit Car Metadata"
+        placeholder="Name, Url, Rent fee, Sale fee"
+        name="editCarMetadata"
+      />
+      <UserInput
+        label="Edit Car Status"
+        placeholder="Status (0 -> Retired | 1 -> InUSe | 2 -> Available)"
+        name="editCarStatus"
       />
       <UserInput
         label="Add Car"
-        placeholder="id, url, rentFee, saleFee"
+        placeholder="Name, Url, Rent fee, Sale fee"
         name="addCar"
       />
       <UserInput

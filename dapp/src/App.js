@@ -81,7 +81,7 @@ function App() {
         } else {
           console.warn(userDue);
           if (userDue !== "0") {
-            setIsAvailable("Pay your due before renting again!");
+            setIsAvailable("Pay your due to rent again!");
           }
         }
         // adjust ride time
@@ -115,12 +115,12 @@ function App() {
             <TopLabel userName={userName} />
           </div>
           <div className="grid place-content-center mt-8">
-            {/* {isAdmin && (
+            {isAdmin && (
               <GradientButton
                 onClick={() => setShowModal(true)}
                 title="Admin Actions"
               />
-            )} */}
+            )}
           </div>
           {/* Data Section */}
           <div className=" mx-auto grid place-content-center  mt-12">
